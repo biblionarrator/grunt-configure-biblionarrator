@@ -20,7 +20,11 @@ module.exports = function(grunt) {
             _ = grunt.util._,
             done = this.async(),
             dist = JSON.parse(fs.readFileSync('config/config.json.dist')),
-            languages = fs.readdirSync('locales');
+            languages = fs.readdirSync('locales'),
+            options = this.options(),
+            checkopt = function (option, answers) {
+                return (typeof answers !== 'undefined' ? answers[option] : undefined) || grunt.option(option) || options[option];
+            };
 
         npm.load(function () {
             npm.commands.ls([], true, function (err, deps, depslite) {
@@ -35,19 +39,28 @@ module.exports = function(grunt) {
                         name: 'domain',
                         type: 'input',
                         message: 'What is the domain of your Biblionarrator installation?',
-                        default: 'localhost'
+                        default: 'localhost',
+                        when: function(answers) {
+                            return typeof checkopt('domain', answers) === 'undefined';
+                        }
                     },
                     {
                         name: 'port',
                         type: 'input',
                         message: 'What port should Biblionarrator listen on?',
-                        default: '3000'
+                        default: '3000',
+                        when: function(answers) {
+                            return typeof checkopt('port', answers) === 'undefined';
+                        }
                     },
                     {
                         name: 'namespace',
                         type: 'input',
                         message: 'What namespace do you want to use for this instance?',
-                        default: 'biblionarrator'
+                        default: 'biblionarrator',
+                        when: function(answers) {
+                            return typeof checkopt('namespace', answers) === 'undefined';
+                        }
                     },
                     {
                         name: 'cacheconf/backend',
@@ -62,6 +75,9 @@ module.exports = function(grunt) {
                                 }
                             }
                             return choices;
+                        },
+                        when: function(answers) {
+                            return typeof checkopt('cacheconf/backend', answers) === 'undefined';
                         }
                     },
                     {
@@ -77,6 +93,9 @@ module.exports = function(grunt) {
                                 }
                             }
                             return choices;
+                        },
+                        when: function(answers) {
+                            return typeof checkopt('dataconf/backend', answers) === 'undefined';
                         }
                     },
                     {
@@ -92,6 +111,9 @@ module.exports = function(grunt) {
                                 }
                             }
                             return choices;
+                        },
+                        when: function(answers) {
+                            return typeof checkopt('mediaconf/backend', answers) === 'undefined';
                         }
                     },
                     {
@@ -103,7 +125,10 @@ module.exports = function(grunt) {
                             { name: 'Titan (recommended, best results)', value: 'titan' },
                             { name: 'OrientDB (no full-text)', value: 'orient' },
                             { name: 'TinkerGraph (in-memory only)', value: 'tinker' }
-                        ]
+                        ],
+                        when: function(answers) {
+                            return typeof checkopt('graphconf/engine', answers) === 'undefined';
+                        }
                     },
                     /* Titan-specific configuration */
                     {
@@ -116,7 +141,7 @@ module.exports = function(grunt) {
                             { name: 'Cassandra (thrift)', value: 'cassandrathrift' }
                         ],
                         when: function (answers) {
-                            return answers['graphconf/engine'] === 'titan';
+                            return checkopt('graphconf/engine', answers) === 'titan' && typeof checkopt('graphconf/titan/storage.backend', answers) === 'undefined';
                         }
                     },
                     {
@@ -125,7 +150,7 @@ module.exports = function(grunt) {
                         message: 'What is the host for the backend used by Titan?',
                         default: '127.0.0.1',
                         when: function (answers) {
-                            return answers['graphconf/engine'] === 'titan';
+                            return checkopt('graphconf/engine', answers) === 'titan' && typeof checkopt('graphconf/titan/storage.hostname', answers) === 'undefined';
                         }
                     },
                     {
@@ -138,7 +163,7 @@ module.exports = function(grunt) {
                             { name: 'Lucene (easier to configure)', value: 'lucene' }
                         ],
                         when: function (answers) {
-                            return answers['graphconf/engine'] === 'titan';
+                            return checkopt('graphconf/engine', answers) === 'titan' && typeof checkopt('graphconf/titan/storage.index.search.backend', answers) === 'undefined';
                         }
                     },
                     {
@@ -147,7 +172,7 @@ module.exports = function(grunt) {
                         message: 'What is the ElasticSearch host?',
                         default: '127.0.0.1',
                         when: function (answers) {
-                            return answers['graphconf/engine'] === 'titan' && answers['graphconf/titan/storage.index.search.backend'] === 'elasticsearch';
+                            return checkopt('graphconf/engine', answers) === 'titan' && checkopt('graphconf/titan/storage.index.search.backend', answers) === 'elasticsearch' && typeof checkopt('graphconf/titan/storage.index.search.hostname', answers) === 'undefined';
                         }
                     },
                     /* Orient-specific configuration */
@@ -157,7 +182,7 @@ module.exports = function(grunt) {
                         message: 'Where do you want to put the database?',
                         default: '/var/lib/biblionarrator',
                         when: function (answers) {
-                            return answers['graphconf/engine'] === 'orient';
+                            return checkopt('graphconf/engine', answers) === 'orient' && typeof checkopt('graphconf/orient/path', answers) === 'undefined';
                         }
                     },
                     /* Orient-specific configuration */
@@ -167,7 +192,7 @@ module.exports = function(grunt) {
                         message: 'What is the username for your Orient database?',
                         default: 'admin',
                         when: function (answers) {
-                            return answers['graphconf/engine'] === 'orient';
+                            return checkopt('graphconf/engine', answers) === 'orient' && typeof checkopt('graphconf/orient/username', answers) === 'undefined';
                         }
                     },
                     {
@@ -176,7 +201,7 @@ module.exports = function(grunt) {
                         message: 'What is the password for your Orient database?',
                         default: 'admin',
                         when: function (answers) {
-                            return answers['graphconf/engine'] === 'orient';
+                            return checkopt('graphconf/engine', answers) === 'orient' && typeof checkopt('graphconf/orient/password', answers) === 'undefined';
                         }
                     },
                     {
@@ -188,18 +213,27 @@ module.exports = function(grunt) {
                             'eric',
                             'ericthesaurus',
                             'isbd'
-                        ]
+                        ],
+                        when: function (answers) {
+                            return checkopt('schemas', answers) === 'undefined';
+                        }
                     },
                     {
                         name: 'languages',
                         type: 'checkbox',
                         message: 'Which languages would you like to use?',
                         default: [ 'en' ],
-                        choices: languages
+                        choices: languages,
+                        when: function (answers) {
+                            return checkopt('languages', answers) === 'undefined';
+                        }
                     },
                 ];
 
                 inquirer.prompt( questions, function( answers ) {
+                    questions.forEach(function (question) {
+                        answers[question.name] = checkopt(question.name, answers);
+                    });
                     dist['backendconf']['mongo']['namespace'] = dist['backendconf']['redis']['namespace'] = answers['namespace'];
                     delete answers['namespace'];
                     dist['domain'] = 'http://' + answers['domain'] + ':' + answers['port'] + '/';
@@ -228,7 +262,11 @@ module.exports = function(grunt) {
         var bcrypt = require('bcrypt'),
             pwgen = require('password-generator'),
             _ = grunt.util._,
-            done = this.async();
+            done = this.async(),
+            options = this.options(),
+            checkopt = function (option, answers) {
+                return (typeof answers !== 'undefined' ? answers[option] : undefined) || grunt.option(option) || options[option];
+            };
 
         var questions = [
             {
@@ -237,7 +275,7 @@ module.exports = function(grunt) {
                 message: 'Username (e-mail address)?',
                 default: 'user@biblionarrator.com',
                 when: function(answers) {
-                    return typeof grunt.option('email') === 'undefined';
+                    return typeof checkopt('email') === 'undefined';
                 }
             },
             {
@@ -246,7 +284,7 @@ module.exports = function(grunt) {
                 message: 'Real name?',
                 default: 'John Smith',
                 when: function(answers) {
-                    return typeof grunt.option('name') === 'undefined';
+                    return typeof checkopt('name') === 'undefined';
                 }
             },
             {
@@ -255,7 +293,7 @@ module.exports = function(grunt) {
                 message: 'Password (leave blank to autogenerate)?',
                 default: '',
                 when: function(answers) {
-                    return typeof grunt.option('password') === 'undefined';
+                    return typeof checkopt('password') === 'undefined';
                 }
             },
             {
@@ -272,16 +310,16 @@ module.exports = function(grunt) {
                     return choices;
                 },
                 when: function(answers) {
-                    return typeof grunt.option('permissions') === 'undefined';
+                    return typeof checkopt('permissions') === 'undefined';
                 }
             }
         ];
         inquirer.prompt( questions, function( answers ) {
             var data = JSON.parse(fs.readFileSync('config/' + target + '.json'));
-            var email = grunt.option('email') || answers['email'];
-            var name = grunt.option('name') || answers['name'];
-            var password = grunt.option('password') || answers['password'];
-            var permissions = grunt.option('permissions') || answers['permissions'];
+            var email = checkopt('email', answers);
+            var name = checkopt('name', answers);
+            var password = checkopt('password', answers);
+            var permissions = checkopt('permissions', answers);
             var generated;
             if (typeof password === 'undefined' || password.length === 0) {
                 generated = true;
@@ -309,19 +347,23 @@ module.exports = function(grunt) {
         target = target || 'config';
         var bcrypt = require('bcrypt'),
             pwgen = require('password-generator'),
-            done = this.async();
+            done = this.async(),
+            options = this.options(),
+            checkopt = function (option, answers) {
+                return (typeof answers !== 'undefined' ? answers[option] : undefined) || grunt.option(option) || options[option];
+            };
         var questions = [ {
                 name: 'password',
                 type: 'password',
                 message: 'Password (leave blank to autogenerate)?',
                 default: '',
                 when: function(answers) {
-                    return typeof grunt.option('password') === 'undefined';
+                    return typeof checkopt('password') !== 'undefined';
                 }
             } ];
         inquirer.prompt( questions, function( answers ) {
             var data = JSON.parse(fs.readFileSync('config/' + target + '.json'));
-            var password = grunt.option('password') || answers['password'];
+            var password = checkopt('password', answers);
             var generated;
             if (typeof password === 'undefined' || password.length === 0) {
                 generated = true;
