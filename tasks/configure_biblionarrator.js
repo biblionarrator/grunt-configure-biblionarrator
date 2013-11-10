@@ -8,18 +8,19 @@
 
 'use strict';
 
+var inquirer = require('inquirer'),
+    extend = require('extend'),
+    fs = require('fs');
+
 module.exports = function(grunt) {
 
-    grunt.registerTask('configure_biblionarrator', 'Write a Biblionarrator configuration.', function(target) {
-        var inquirer = require('inquirer'),
-            extend = require('extend'),
-            fs = require('fs'),
-            options = this.options(),
+    grunt.registerTask('config', 'Write a Biblionarrator configuration.', function(target) {
+        target = target || 'config';
+        var npm = require('npm'),
             _ = grunt.util._,
-            npm = require('npm'),
             done = this.async(),
-            dist = JSON.parse(fs.readFileSync(process.cwd() + '/config/config.json.dist')),
-            languages = fs.readdirSync(process.cwd() + '/locales');
+            dist = JSON.parse(fs.readFileSync('config/config.json.dist')),
+            languages = fs.readdirSync('locales');
 
         npm.load(function () {
             npm.commands.ls([], true, function (err, deps, depslite) {
@@ -219,6 +220,122 @@ module.exports = function(grunt) {
                     done();
                 });
             });
+        });
+    });
+
+    grunt.registerTask('user', 'Create Biblionarrator user', function (target) {
+        target = target || 'config';
+        var bcrypt = require('bcrypt'),
+            pwgen = require('password-generator'),
+            _ = grunt.util._,
+            done = this.async();
+
+        var questions = [
+            {
+                name: 'email',
+                type: 'input',
+                message: 'Username (e-mail address)?',
+                default: 'user@biblionarrator.com',
+                when: function(answers) {
+                    return typeof grunt.option('email') === 'undefined';
+                }
+            },
+            {
+                name: 'name',
+                type: 'input',
+                message: 'Real name?',
+                default: 'John Smith',
+                when: function(answers) {
+                    return typeof grunt.option('name') === 'undefined';
+                }
+            },
+            {
+                name: 'password',
+                type: 'password',
+                message: 'Password (leave blank to autogenerate)?',
+                default: '',
+                when: function(answers) {
+                    return typeof grunt.option('password') === 'undefined';
+                }
+            },
+            {
+                name: 'permissions',
+                type: 'checkbox',
+                message: 'Permissions?',
+                default: [ '*' ],
+                choices: function(answers) {
+                    var permissions = JSON.parse(fs.readFileSync('src/lib/permissions.json'));
+                    var choices = [ { name: 'all (super user)', value: '*' } ];
+                    for (var perm in permissions) {
+                        choices.push({ name: permissions[perm], value: perm });
+                    }
+                    return choices;
+                },
+                when: function(answers) {
+                    return typeof grunt.option('permissions') === 'undefined';
+                }
+            }
+        ];
+        inquirer.prompt( questions, function( answers ) {
+            var data = JSON.parse(fs.readFileSync('config/' + target + '.json'));
+            var email = grunt.option('email') || answers['email'];
+            var name = grunt.option('name') || answers['name'];
+            var password = grunt.option('password') || answers['password'];
+            var permissions = grunt.option('permissions') || answers['permissions'];
+            var generated;
+            if (typeof password === 'undefined' || password.length === 0) {
+                generated = true;
+                password = pwgen(16);
+            }
+            data.users = data.users || { };
+            data.users[email] = { '_password': bcrypt.hashSync(password, 10), 'email': email, 'name': name };
+            if (permissions[0] === '*') {
+                data.users[email].permissions = '*';
+            } else {
+                data.users[email].permission = { };
+                permissions.forEach(function (perm) {
+                    data.users[email].permission[perm] = true;
+                });
+            }
+            fs.writeFileSync('config/' + target + '.json', JSON.stringify(data, null, 4));
+            if (generated) {
+                console.log("The user " + email + " has been created with the following automatically-generated password: " + password);
+            }
+            done();
+        });
+    });
+
+    grunt.registerTask('passwd', 'Generate Biblionarrator system user password', function(target) {
+        target = target || 'config';
+        var bcrypt = require('bcrypt'),
+            pwgen = require('password-generator'),
+            done = this.async();
+        var questions = [ {
+                name: 'password',
+                type: 'password',
+                message: 'Password (leave blank to autogenerate)?',
+                default: '',
+                when: function(answers) {
+                    return typeof grunt.option('password') === 'undefined';
+                }
+            } ];
+        inquirer.prompt( questions, function( answers ) {
+            var data = JSON.parse(fs.readFileSync('config/' + target + '.json'));
+            var password = grunt.option('password') || answers['password'];
+            var generated;
+            if (typeof password === 'undefined' || password.length === 0) {
+                generated = true;
+                password = pwgen(16);
+            }
+            data.users = data.users || { };
+            data.users.systemuser = { '_password': bcrypt.hashSync(password, 10), 'email': 'systemuser', 'permissions': '*' };
+            fs.writeFileSync('config/' + target + '.json', JSON.stringify(data, null, 4));
+            if (generated) {
+                console.log("Your systemuser has been created with the following password: " + password);
+                console.log("  If you forget this password you can generate a new password");
+                console.log("  for the systemuser by rerunning `grunt passwd" + (target !== 'config' ? ':' + target : '') + "`");
+            }
+            done();
         });
     });
 };
