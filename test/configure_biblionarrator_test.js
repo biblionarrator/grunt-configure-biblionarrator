@@ -1,7 +1,8 @@
 'use strict';
 
-var grunt = require('grunt'),
-    fs = require('fs');
+var fs = require('fs'),
+    grunt = require('grunt'),
+    bcrypt = require('bcrypt');
 
 /*
   ======== A Handy Little Nodeunit Reference ========
@@ -80,13 +81,6 @@ var foo_config = {
         "tinker": {},
         "neo4j": {}
     },
-    "users": {
-        "systemuser": {
-            "password": "systempass",
-            "email": "systemuser",
-            "permissions": "*"
-        }
-    },
     "domain": "http://test.biblionarrator.com:3000/",
     "languages": [
         "en"
@@ -106,9 +100,31 @@ exports.config = {
   },
   foo_config: function(test) {
     test.expect(1);
+    var data = JSON.parse(fs.readFileSync('config/foo.json'));
+    delete data.users;
 
-    test.deepEqual(JSON.parse(fs.readFileSync('config/foo.json')), foo_config);
+    test.deepEqual(data, foo_config);
 
     test.done();
   },
+  foo_passwd: function (test) {
+    var bcrypt = require('bcrypt');
+    var password = JSON.parse(fs.readFileSync('config/foo.json')).users.systemuser._password;
+    test.expect(1);
+
+    bcrypt.compare('imapasswordshortandstout', password, function (err, res) {
+        test.equal(res, true);
+        test.done();
+    });
+  },
+  foo_user: function (test) {
+    var user = JSON.parse(fs.readFileSync('config/foo.json')).users['tester@biblionarrator.com'];
+    test.expect(2);
+    bcrypt.compare('iamnotapassword', user._password, function (err, res) {
+        test.equal(res, true);
+        delete user._password;
+        test.deepEqual(user, { 'email': 'tester@biblionarrator.com', 'name': 'Jonathan Test', 'permissions': '*' });
+        test.done();
+    });
+  }
 };

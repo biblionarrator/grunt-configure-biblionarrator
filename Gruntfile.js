@@ -46,6 +46,19 @@ module.exports = function(grunt) {
         'languages': [ 'en' ]
       },
     },
+    passwd: {
+      options: {
+        'password': 'imapasswordshortandstout'
+      }
+    },
+    user: {
+      options: {
+        'email': 'tester@biblionarrator.com',
+        'name': 'Jonathan Test',
+        'password': 'iamnotapassword',
+        'permissions': [ '*' ]
+      }
+    },
 
     // Unit tests.
     nodeunit: {
@@ -62,7 +75,7 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-clean');
   grunt.loadNpmTasks('grunt-contrib-nodeunit');
 
-  grunt.registerTask('test', ['clean', 'config:foo', 'nodeunit', 'clean']);
+  grunt.registerTask('test', ['clean', 'config:foo', 'passwd:foo', 'user:foo', 'nodeunit', 'clean']);
 
   // By default, lint and run all tests.
   grunt.registerTask('default', ['jshint', 'test']);

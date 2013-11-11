@@ -358,7 +358,7 @@ module.exports = function(grunt) {
                 message: 'Password (leave blank to autogenerate)?',
                 default: '',
                 when: function(answers) {
-                    return typeof checkopt('password') !== 'undefined';
+                    return typeof checkopt('password') === 'undefined';
                 }
             } ];
         inquirer.prompt( questions, function( answers ) {
