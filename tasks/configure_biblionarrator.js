@@ -238,7 +238,6 @@ module.exports = function(grunt) {
                     delete answers['namespace'];
                     dist['domain'] = 'http://' + answers['domain'] + ':' + answers['port'] + '/';
                     delete answers['domain'];
-                    delete answers['port'];
                     for (var key in answers) {
                         var parts = key.split('/');
                         var section = answers[key];
