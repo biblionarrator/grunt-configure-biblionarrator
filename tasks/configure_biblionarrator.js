@@ -237,6 +237,7 @@ module.exports = function(grunt) {
                     dist['backendconf']['mongo']['namespace'] = dist['backendconf']['redis']['namespace'] = answers['namespace'];
                     delete answers['namespace'];
                     dist['domain'] = 'http://' + answers['domain'] + ':' + answers['port'] + '/';
+                    dist['port'] = parseInt(dist['port'], 10);
                     delete answers['domain'];
                     for (var key in answers) {
                         var parts = key.split('/');
